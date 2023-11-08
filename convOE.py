@@ -55,6 +55,8 @@ st.write(df_conv.head())
 
 
 
+
+
 #plotting linear plot to show trend:
 st\
     .subheader('Linear Trend Line Visualization:')
@@ -64,7 +66,7 @@ ax_sb = \
   (data=df_conv
    , x='ydstogo'
    , y='conversion_rate'
-   , line_kws={'color':'red'})
+   , line_kws={'color':'blue'})
 ax_sb.set(xticks=np.arange(0,16,1))   
 
 st.pyplot(fig_sb)
@@ -83,8 +85,6 @@ st\
 
 st\
     .subheader('Best/Worst Expected Conversion Rate using GLM')
-st\
-    .write('Look into adding additional graphing into this part:')
 #expected conversion rate based on ydstogo:
 
 pbp_py_third['exp_third_conv'] = \
@@ -113,6 +113,29 @@ croe_leaders.rename\
 #greater than 50 third down attempts
 st\
     .write(croe_leaders.sort_values(by='CROE_avg', ascending=False).query('n>50'))
+
+top10_croe = \
+    croe_leaders.query('n>50').sort_values(by='CROE_avg', ascending=False)
+
+##graphing:
+
+plt.style.use('fivethirtyeight')
+
+
+x_ax=top10_croe['passer_player_name']
+y_ax=top10_croe['CROE_avg']
+
+
+fig = plt.figure()
+ax = fig.add_axes([0,0,1,1])
+
+plt.xlabel('Conversion Rate over Expected (CROE)')
+plt.title(f'QBs with Best/Worst CROE in {season_var}')
+
+
+plt.tight_layout()
+ax.barh(x_ax,y_ax)
+st.write(fig)
 
 
 
@@ -206,22 +229,28 @@ qb1 = \
 st\
     .write(qb1)
 
-st.\
-    bar_chart(qb1, x='passer_player_name', y='CROE')
+
+st\
+    .subheader('Data Visualization:')
 
 
+#Bar Chart Matplotlib
+plt.style.use('ggplot')
 
-alt_chart = \
-    (
-        alt.Chart(qb1, title=f"Scatterplot of QB1 3rd down Conversion Rate over Expected in {season_var}")
-        .mark_circle()
-        .encode(
-            x='passer_player_name'
-            ,y='CROE'
-        )
-        .interactive()
-    )
-st.altair_chart(alt_chart, use_container_width=True)
+x_ax=qb1['passer_player_name']
+y_ax=qb1['CROE']
+
+
+fig = plt.figure()
+ax = fig.add_axes([0,0,1,1])
+
+plt.xlabel('Conversion Rate over Expected (CROE)')
+plt.title(f'QBs with Best/Worst CROE in {season_var}')
+
+
+plt.tight_layout()
+ax.barh(x_ax,y_ax)
+st.write(fig)
 
 
 
