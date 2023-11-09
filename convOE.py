@@ -9,21 +9,36 @@ import statsmodels.api as sm
 import matplotlib.pyplot as plt
 
 st\
-    .title('3rd Down Conversion over Expected (COE) Analysis')
+    .title('3rd Down Conversion Rates over Expected Analysis')
 
 st\
-    .markdown('Interactive Streamlit app created to show top QBs who have best conversion rates on 3rd down Created By: Jason Park' )
+    .subheader('Introduction:')
 
+st\
+    .write('This interactive Streamlit App allows users to see the Conversion Rates over Expected (CROE) for NFL quarterbacks' )
+# st\
+#     .write('\n')
+st\
+    .write('Using Machine Learning, we are able to then predict Conversion Rates given game-time scenarios by adding additional features into our model')
+
+st\
+    .write('This app begins with using "Yards to Go" as the only feature, and builds from there based on user inputs')
+
+st\
+    .write('**Created By: Jason Park**')
 
 #user input: select nfl season to analyze:
 
+st\
+    .subheader('Season Selection:')
+
 season_var =\
     st.selectbox('Select an NFL season to analyze:',\
-                 [2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023])
+                 [2016, 2017, 2018, 2019, 2020, 2021, 2022])
 
 
 ##caching??? nned to confirm if this is working as intended
-st.cache_data
+#st.cache_data
 def load_pbp():
     df = \
         nfl.import_pbp_data([season_var])
@@ -38,7 +53,12 @@ pbp_py_third = \
         .query('play_type == "pass" & down == 3.0 & air_yards.notnull() & ydstogo <= 15')
 
 
-#conversion rate based on ydstogo:
+#Data Preview - conversion rate based on ydstogo:
+st.subheader('Data Preview - Conversion Rates based on Yards to Go')
+
+st\
+    .write("To simulate most common game scenarios, let's set the maximum distance at 3rd-and-15 and include both completed/incompleted passes")
+
 df_conv = \
 pbp_py_third \
     .groupby('ydstogo')\
@@ -50,26 +70,42 @@ df_conv.reset_index(inplace=True)
 df_conv.rename(columns = \
     {'third_down_converted_mean':'conversion_rate', 'third_down_converted_count':'n'}, inplace=True)
 
+df_conv_display = \
+df_conv.rename(columns = \
+                {'ydstogo':'Yards to Go'
+                 ,'conversion_rate':'Average Conv. Rate'
+                 ,'n':'Attempts'})
 
-st.write(df_conv.head())
+df_conv_display['Average Conv. Rate'] = ((df_conv_display['Average Conv. Rate']*100).round(2))
 
 
+st.write(df_conv_display)
 
+st.bar_chart(df_conv_display)
+
+# st\
+# .write(plt.bar(df_conv_display['Yards to Go'], df_conv_display['Average Conv. Rate']))
 
 
 #plotting linear plot to show trend:
-st\
-    .subheader('Linear Trend Line Visualization:')
-fig_sb, ax_sb = plt.subplots()
-ax_sb = \
- sns.regplot\
-  (data=df_conv
-   , x='ydstogo'
-   , y='conversion_rate'
-   , line_kws={'color':'blue'})
-ax_sb.set(xticks=np.arange(0,16,1))   
+# st\
+#     .subheader('Linear Trend Line Visualization:')
+# fig_sb, ax_sb = plt.subplots()
+# ax_sb = \
+#  sns.regplot\
+#   (data=df_conv
+#    , x='ydstogo'
+#    , y='conversion_rate'
+#    , line_kws={'color':'blue'})
+# ax_sb.set(xticks=np.arange(0,16,1))   
 
-st.pyplot(fig_sb)
+# st.pyplot(fig_sb)
+
+
+
+
+
+##GLM:
 
 st\
     .subheader('GLM Regression using "Yards to Go" as only feature:')
