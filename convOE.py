@@ -58,6 +58,8 @@ st.subheader('Data Preview - Conversion Rates based on Yards to Go')
 
 st\
     .write("To simulate most common game scenarios, let's set the maximum distance at 3rd-and-15 and include both completed/incompleted passes")
+st\
+    .write('Lets get a quick preview of our data:')
 
 df_conv = \
 pbp_py_third \
@@ -109,6 +111,9 @@ st.bar_chart(data=df_conv, x='ydstogo', y='conversion_rate')
 st\
     .subheader('GLM Regression using "Yards to Go" as only feature:')
 
+st\
+    .write('Using "Yards to Go" as our only feature (for now), lets use a Generalized Linear Model (GLM) to predict Third-Down Conversion Rates')
+
 conversion_py = \
   smf.glm(formula='third_down_converted ~ ydstogo',
           data=pbp_py_third,
@@ -119,7 +124,10 @@ st\
     .write(conversion_py.summary())
 
 st\
-    .subheader('Best/Worst Expected Conversion Rate using GLM')
+    .subheader('Conversion Rate over Expected (CROE) Explained:')
+st.write('From our GLM model, we now have a predicted Third Down Conversion Rate based on Yards to Go as our feature.')
+st.write('To calculate CROE, we will take the actual Third Down Conversion Outcome (1 or 0) and subtract our predicted rate based on our model. Afterwards, we will aggregate to get a mean CROE value for the season')
+st.write("Let's quickly see our new dataset and see some data visualization for starting NFL QBs (at least 50 converted 3rd Downs as a benchmark):")
 #expected conversion rate based on ydstogo:
 
 pbp_py_third['exp_third_conv'] = \
@@ -145,9 +153,6 @@ croe_leaders.reset_index(inplace=True)
 croe_leaders.rename\
   (columns = {'CROE_mean':'CROE_avg', 'third_down_converted_mean':'avg_conv_rate', 'third_down_converted_sum':'n'}, inplace=True)
 
-#greater than 50 third down attempts
-st\
-    .write(croe_leaders.sort_values(by='CROE_avg', ascending=False).query('n>50'))
 
 top10_croe = \
     croe_leaders.query('n>50').sort_values(by='CROE_avg', ascending=False)
@@ -160,16 +165,16 @@ plt.style.use('fivethirtyeight')
 x_ax=top10_croe['passer_player_name']
 y_ax=top10_croe['CROE_avg']
 
-
+col = [{x<0:'red', x>0:'blue'}[True] for x in y_ax]
 fig = plt.figure()
 ax = fig.add_axes([0,0,1,1])
 
-plt.xlabel('Conversion Rate over Expected (CROE)')
+plt.xlabel('Mean Conversion Rate over Expected (CROE)')
 plt.title(f'QBs with Best/Worst CROE in {season_var}')
 
 
 plt.tight_layout()
-ax.barh(x_ax,y_ax)
+ax.barh(x_ax,y_ax, color=col)
 st.write(fig)
 
 
@@ -177,6 +182,9 @@ st.write(fig)
 #Adding more features to model:
 st\
     .subheader('Adding additional features to our GLM model:')
+
+st\
+    .write('For some interactivity, the user can now include additional features that influence Third Down Conversion Rates')
 
 if 'features_list' not in st.session_state:
     st.session_state.features_list = \
@@ -187,12 +195,15 @@ if 'features_list' not in st.session_state:
 
 add_features = \
     st.selectbox('What other features would you like to include?:',\
-                 ['QB Hit?', 'Number of Pass Rushers', 'Yards to go for TD', 'Air Yards (for QB throws)'])
+                 ['QB Hit?', 'Number of Pass Rushers', 'Yards to go for TD', 'Air Yards Thrown'])
 if st.button('Add new feature to GLM Model'):
-    st.write('Adding new feature to features list')
     st.session_state.features_list.append(add_features)
+if st.button('Remove your last choice:'):
+    st.session_state.features_list.pop()
 st.write('New features to be included are: ', \
             st.session_state.features_list)
+
+    
 
 glm_features = ['passer', 'passer_id', 'passer_player_name'\
                        ,'season', 'down', 'third_down_converted']
@@ -206,16 +217,16 @@ for var in st.session_state.features_list:
         var = 'number_of_pass_rushers'
     elif var == 'Yards to go for TD':
         var = 'yardline_100'
-    elif var == 'Air Yards (for QB throws)':
+    elif var == 'Air Yards Thrown':
         var = 'air_yards'
     glm_features.append(var)
     glm_features_string.append(var)
 
 
-
 # st.write(pbp_py_third[glm_features].head())
 pbp_py_third_compl = \
     pbp_py_third[glm_features].dropna(axis=0)
+
 
 ##GLM summary with additional features:
 st\
@@ -232,16 +243,15 @@ conversion_v2_py = \
           , data=pbp_py_third_compl
           , family=sm.families.Binomial())\
           .fit()
-st\
-    .write(conversion_v2_py.summary())
 
 
+st.write(conversion_v2_py.summary())
 #calculating CROE after adding addt'l features:
 pbp_py_third_compl['exp_third_conv'] = \
   conversion_v2_py.predict()
 
 pbp_py_third_compl['CROE'] =\
-  pbp_py_third['third_down_converted'] - pbp_py_third['exp_third_conv']
+  pbp_py_third_compl['third_down_converted'] - pbp_py_third_compl['exp_third_conv']
 
 
 pbp_py_third_convr = \
@@ -258,11 +268,12 @@ pbp_py_third_convr\
           ,inplace=True)
 
 st\
-    .subheader('3rd Down Conversion Rate over Expected Leaders (over 100 passes)')
+    .subheader('3rd Down Conversion Rate over Expected Leaders')
 qb1 = \
-    pbp_py_third_convr.sort_values(by='CROE', ascending=False).query('n > 100')
+    pbp_py_third_convr.sort_values(by='CROE', ascending=False).query('n > 50')
 st\
     .write(qb1)
+
 
 
 st\
@@ -287,5 +298,12 @@ plt.tight_layout()
 ax.barh(x_ax,y_ax)
 st.write(fig)
 
+
+c = (
+    alt.Chart(qb1)
+    .mark_circle()
+    .encode(x='passer_player_name',y='CROE')
+)
+st.altair_chart(c, use_container_width=True)
 
 
