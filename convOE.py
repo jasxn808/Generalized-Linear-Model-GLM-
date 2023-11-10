@@ -78,10 +78,9 @@ df_conv.rename(columns = \
 
 df_conv_display['Average Conv. Rate'] = ((df_conv_display['Average Conv. Rate']*100).round(2))
 
-
 st.write(df_conv_display)
 
-st.bar_chart(df_conv_display)
+st.bar_chart(data=df_conv, x='ydstogo', y='conversion_rate')
 
 # st\
 # .write(plt.bar(df_conv_display['Yards to Go'], df_conv_display['Average Conv. Rate']))
