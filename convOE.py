@@ -8,6 +8,9 @@ import statsmodels.formula.api as smf
 import statsmodels.api as sm
 import matplotlib.pyplot as plt
 
+import plotly.express as px
+
+
 st\
     .title('3rd Down Conversion Rates over Expected Analysis')
 
@@ -19,7 +22,7 @@ st\
 # st\
 #     .write('\n')
 st\
-    .write('Using Machine Learning, we are able to then predict Conversion Rates given game-time scenarios by adding additional features into our model')
+    .write('Using Machine Learning, we are able to then predict new Conversion Rates given game-time scenarios by adding additional features into our model')
 
 st\
     .write('This app begins with using "Yards to Go" as the only feature, and builds from there based on user inputs')
@@ -126,7 +129,7 @@ st\
 st\
     .subheader('Conversion Rate over Expected (CROE) Explained:')
 st.write('From our GLM model, we now have a predicted Third Down Conversion Rate based on Yards to Go as our feature.')
-st.write('To calculate CROE, we will take the actual Third Down Conversion Outcome (1 or 0) and subtract our predicted rate based on our model. Afterwards, we will aggregate to get a mean CROE value for the season')
+st.write('To calculate CROE, we will take the actual Third Down Conversion Outcome (1 or 0) and subtract our predicted rate based on our model. Afterwards, we will aggregate to get a mean CROE value for the season, per QB')
 st.write("Let's quickly see our new dataset and see some data visualization for starting NFL QBs (at least 50 converted 3rd Downs as a benchmark):")
 #expected conversion rate based on ydstogo:
 
@@ -165,7 +168,7 @@ plt.style.use('fivethirtyeight')
 x_ax=top10_croe['passer_player_name']
 y_ax=top10_croe['CROE_avg']
 
-col = [{x<0:'red', x>0:'blue'}[True] for x in y_ax]
+col = [{x<0:'red', x>0:'green'}[True] for x in y_ax]
 fig = plt.figure()
 ax = fig.add_axes([0,0,1,1])
 
@@ -269,10 +272,16 @@ pbp_py_third_convr\
 
 st\
     .subheader('3rd Down Conversion Rate over Expected Leaders')
+st\
+    .write('From our new model calculations, here are the best/worst QB CROE performances - again using > 50 successful Third Down Conversions as our benchmark')
+
 qb1 = \
     pbp_py_third_convr.sort_values(by='CROE', ascending=False).query('n > 50')
+
+qb1_display = \
+    qb1.rename(columns = {'avg_conversion':'Avg. Conversion', 'n':'Count Conversions'})
 st\
-    .write(qb1)
+    .write(qb1_display)
 
 
 
@@ -293,17 +302,40 @@ ax = fig.add_axes([0,0,1,1])
 plt.xlabel('Conversion Rate over Expected (CROE)')
 plt.title(f'QBs with Best/Worst CROE in {season_var}')
 
-
+col2 = [{x<0:'red', x>0:'green'}[True] for x in y_ax]
 plt.tight_layout()
-ax.barh(x_ax,y_ax)
+ax.barh(x_ax,y_ax,color=col2)
 st.write(fig)
 
 
-c = (
-    alt.Chart(qb1)
-    .mark_circle()
-    .encode(x='passer_player_name',y='CROE')
-)
-st.altair_chart(c, use_container_width=True)
+# c = (
+#     alt.Chart(qb1)
+#     .mark_circle()
+#     .encode(x='passer_player_name',y='CROE')
+# )
+# st.altair_chart(c, use_container_width=True)
 
 
+
+pos_CROE = px.scatter(qb1.query('CROE > 0'), x="avg_conversion", y="CROE",
+	         size="CROE", color="passer_player_name",
+                 hover_name="passer_player_name", log_x=True, size_max=60,
+                 labels = {
+                     'avg_conversion':'Mean Conversion Rate',
+                     'CROE' : 'Mean CROE Rate',
+                     'passer_player_name':'QB'
+                 },
+                 title = 'Mean Conversion Rate vs. CROE (Positive Values)')
+
+st.write(pos_CROE)
+
+
+st.subheader('Conclusion')
+st\
+    .write("Completion Rate over Expected should not be the end-all, be-all metric for QB performance categorization. For example, in 2022, Tom Brady and Aaron Rodgers both had lower CROEs than Kenny Pickett."
+        " Does that mean Kenny Pickett is the better QB?")
+st\
+    .write('\n')
+st\
+    .write("3rd Down conversions are influenced by other factors beyond the scope of the GLM models"
+           "- coaching, supporting cast, weather, etc. Instead, CROE should be used as a metric tool as part of a larger evaluation process in determining QB performance.")
