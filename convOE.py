@@ -9,6 +9,7 @@ import statsmodels.api as sm
 import matplotlib.pyplot as plt
 from plotly import express as px
 
+st.set_page_config(layout='wide')
 
 
 st\
@@ -84,9 +85,13 @@ df_conv.rename(columns = \
 
 df_conv_display['Average Conv. Rate'] = ((df_conv_display['Average Conv. Rate']*100).round(2))
 
-st.write(df_conv_display)
 
-st.bar_chart(data=df_conv, x='ydstogo', y='conversion_rate')
+col1, col2 = st.columns(2)
+with col1:
+    st.write(df_conv_display)
+with col2:
+    st.bar_chart(data=df_conv, x='ydstogo', y='conversion_rate')
+
 
 # st\
 # .write(plt.bar(df_conv_display['Yards to Go'], df_conv_display['Average Conv. Rate']))
@@ -170,7 +175,7 @@ top10_croe = \
 top10_croe_display = \
     top10_croe.rename(columns = {'CROE_avg':'Avg. CROE','avg_conv_rate':'Avg. Conversion', 'n':'Count Conversions'})
 
-st.write(top10_croe_display)
+#st.write(top10_croe_display)
 
 ##graphing:
 
@@ -190,7 +195,14 @@ plt.title(f'QBs with Best/Worst CROE in {season_var}')
 
 plt.tight_layout()
 ax.barh(x_ax,y_ax, color=col)
-st.write(fig)
+#st.write(fig)
+
+
+col1, col2 = st.columns(2)
+with col1:
+    st.write(top10_croe_display[['season', 'passer_player_name','Avg. CROE', 'Avg. Conversion']], gap='large')
+with col2:
+    st.write(fig)
 
 
 
@@ -293,15 +305,8 @@ qb1 = \
 
 qb1_display = \
     qb1.rename(columns = {'avg_conversion':'Avg. Conversion', 'n':'Count Conversions', 'CROE':'Avg. CROE'})
-st\
-    .write(qb1_display)
-
-
-
-
-
-st\
-    .subheader('Data Visualization:')
+# st\
+#     .write(qb1_display)
 
 
 #Bar Chart Matplotlib
@@ -320,7 +325,15 @@ plt.title(f'QBs with Best/Worst CROE in {season_var}')
 col2 = [{x<0:'red', x>0:'green'}[True] for x in y_ax]
 plt.tight_layout()
 ax.barh(x_ax,y_ax,color=col2)
-st.write(fig)
+#st.write(fig)
+
+
+col1, col2 = st.columns(2)
+with col1:
+    st.write(qb1_display[['season', 'passer_player_name','Avg. CROE', 'Avg. Conversion']])
+with col2:
+    st.write(fig)
+
 
 
 # c = (
